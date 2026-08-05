@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  passwordHash  String?
+  authProvider  String         @default("LOCAL") // LOCAL | GOOGLE | MICROSOFT
+  createdAt     DateTime       @default(now())
+
+  emailAccounts EmailAccount[]
+  drafts        Draft[]
+  emailLogs     EmailLog[]
+}
+
+model EmailAccount {
+  id              String     @id @default(cuid())
+  userId          String
+  provider        String     // GMAIL | OUTLOOK
+  providerEmail   String
+  accessTokenEnc  String
+  refreshTokenEnc String
+  tokenExpiry     DateTime?
+  connectedAt     DateTime   @default(now())
+
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailLogs       EmailLog[]
+
+  @@unique([userId, provider, providerEmail])
+}
+
+model Draft {
+  id        String    @id @default(cuid())
+  userId    String
+  subject   String
+  body      String
+  tone      String?
+  status    String    @default("DRAFT") // DRAFT | SCHEDULED | SENT
+  updatedAt DateTime  @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule  Schedule?
+}
+
+model Schedule {
+  id        String   @id @default(cuid())
+  draftId   String   @unique
+  sendAt    DateTime
+  status    String   @default("PENDING") // PENDING | EXECUTED | FAILED
+
+  draft     Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+}
+
+model EmailLog {
+  id             String       @id @default(cuid())
+  userId         String
+  emailAccountId String
+  subject        String
+  recipient      String
+  status         String       @default("SENT") // SENT | FAILED
+  sentAt         DateTime     @default(now())
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
+}
