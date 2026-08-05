@@ -2,14 +2,14 @@
   "name": "mailflow-ai-monorepo",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter \"./packages/*\" --filter \"./apps/*\" build",
-    "dev": "pnpm --parallel --filter ./apps/* dev",
-    "dev:api": "pnpm --filter @mailflow/api dev",
-    "dev:web": "pnpm --filter @mailflow/web dev",
-    "dev:mcp": "pnpm --filter @mailflow/mcp-server dev",
-    "db:migrate": "pnpm --filter @mailflow/api db:migrate",
-    "db:generate": "pnpm --filter @mailflow/api db:generate",
-    "db:studio": "pnpm --filter @mailflow/api db:studio"
+    "build": "npx pnpm --filter \"./packages/*\" --filter \"./apps/*\" build",
+    "dev": "npx pnpm --parallel --filter ./apps/* dev",
+    "dev:api": "npx pnpm --filter @mailflow/api dev",
+    "dev:web": "npx pnpm --filter @mailflow/web dev",
+    "dev:mcp": "npx pnpm --filter @mailflow/mcp-server dev",
+    "db:migrate": "npx pnpm --filter @mailflow/api db:migrate",
+    "db:generate": "npx pnpm --filter @mailflow/api db:generate",
+    "db:studio": "npx pnpm --filter @mailflow/api db:studio"
   },
   "devDependencies": {
     "typescript": "^5.4.5"

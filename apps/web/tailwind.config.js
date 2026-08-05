@@ -7,15 +7,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-        }
+        paper: {
+          50: '#F9F8F6',
+          100: '#EFE9E3',
+          200: '#D9CFC7',
+        },
+        accent: {
+          400: '#C9B59C',
+          500: '#B8A186',
+        },
+        ink: {
+          900: '#2B241C',
+          700: '#5A4F42',
+        },
       }
-    },
+    }
   },
   plugins: [],
 };

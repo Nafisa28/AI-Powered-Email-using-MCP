@@ -30,12 +30,12 @@ app.use('/api/emails', emailsRoutes);
 app.use('/api/schedule', scheduleRoutes);
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', app: 'MailFlow Express API', version: '1.0.0' });
+  res.json({ status: 'ok', app: 'Flymail Express API', version: '1.0.0' });
 });
 
 // Initialize background scheduler
 startScheduler();
 
 app.listen(PORT, () => {
-  console.log(`⚡ MailFlow Express API server running on port ${PORT}`);
+  console.log(`⚡ Flymail Express API server running on port ${PORT}`);
 });

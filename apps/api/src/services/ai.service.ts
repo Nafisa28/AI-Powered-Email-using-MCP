@@ -29,12 +29,12 @@ export class AIService {
       console.log('[AI Service Fallback Generator] Prompt:', req.prompt);
       return {
         subject: `Regarding: ${req.prompt.slice(0, 40)}${req.prompt.length > 40 ? '...' : ''}`,
-        body: `Dear recipient,\n\n${req.prompt}\n\nPlease let me know your thoughts on this.\n\nBest regards,\nMailFlow User`,
+        body: `Dear recipient,\n\n${req.prompt}\n\nPlease let me know your thoughts on this.\n\nBest regards,\nFlymail User`,
         suggestedFollowUp: 'Follow up in 3 business days if no reply.'
       };
     }
 
-    const systemPrompt = `You are MailFlow AI, an elite executive email composition agent.
+    const systemPrompt = `You are Flymail, an elite executive email composition agent.
 Your objective is to generate clear, effective, and beautifully structured professional emails.
 Strict Rules:
 1. Return ONLY valid, minified JSON with keys "subject", "body", and optional "suggestedFollowUp".

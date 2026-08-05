@@ -11,13 +11,14 @@ import { DraftsPage } from './pages/DraftsPage';
 import { ScheduledPage } from './pages/ScheduledPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { LandingPage } from './pages/LandingPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 text-sm">
-        Loading MailFlow AI...
+      <div className="min-h-screen bg-paper-50 flex items-center justify-center text-ink-700 text-sm">
+        Loading Flymail...
       </div>
     );
   }
@@ -29,10 +30,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 export const AppContent: React.FC = () => {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-paper-50 text-ink-900 flex flex-col font-sans">
       <Navbar />
       <main className="flex-1">
         <Routes>
+          <Route path="/welcome" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route

@@ -3,7 +3,7 @@ import { prisma } from '../prisma.js';
 import { MCPClient } from './mcp.client.js';
 
 export function startScheduler() {
-  console.log('⏱️  MailFlow Email Scheduler initialized (running every minute)');
+  console.log('⏱️  Flymail Email Scheduler initialized (running every minute)');
 
   cron.schedule('* * * * *', async () => {
     try {

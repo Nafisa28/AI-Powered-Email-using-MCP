@@ -180,7 +180,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Direct REST HTTP wrapper for Express API client
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', server: 'MailFlow MCP Server', version: '1.0.0' });
+  res.json({ status: 'ok', server: 'Flymail MCP Server', version: '1.0.0' });
 });
 
 app.get('/tools', (req, res) => {
@@ -202,5 +202,5 @@ app.post('/tools/call', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 MailFlow MCP Server running on port ${PORT}`);
+  console.log(`🚀 Flymail MCP Server running on port ${PORT}`);
 });

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { PillSelector } from '../components/PillSelector';
 import { EmailPreviewCard } from '../components/EmailPreviewCard';
-import { Sparkles, Wand2, Check, AlertCircle, Clock, X } from 'lucide-react';
+import { Wand2, Check, AlertCircle, Clock, X } from 'lucide-react';
 
 export const ComposePage: React.FC = () => {
   const [prompt, setPrompt] = useState('');
@@ -155,27 +155,27 @@ export const ComposePage: React.FC = () => {
       {/* Banner / Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-ink-900 tracking-tight flex items-center gap-2">
             Compose with AI
-            <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              Writemail.ai Inspired UX
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-accent-400/20 text-ink-900 border border-accent-400/40">
+              Flymail Executive UX
             </span>
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-ink-700 mt-1">
             Describe your email objective, adjust parameters, and send seamlessly via MCP.
           </p>
         </div>
 
         {autoSaveStatus !== 'idle' && (
-          <div className="text-xs text-slate-400 flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+          <div className="text-xs text-ink-700 flex items-center gap-1.5 bg-paper-100 px-3 py-1.5 rounded-full border border-paper-200">
             {autoSaveStatus === 'saving' ? (
               <>
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
                 <span>Auto-saving draft...</span>
               </>
             ) : (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Draft saved</span>
               </>
             )}
@@ -187,15 +187,15 @@ export const ComposePage: React.FC = () => {
         <div
           className={`mb-6 p-4 rounded-2xl border flex items-center justify-between text-sm ${
             notification.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-              : 'bg-rose-500/10 border-rose-500/20 text-rose-300'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-900'
           }`}
         >
           <div className="flex items-center gap-2.5">
             {notification.type === 'success' ? (
-              <Check className="w-5 h-5 text-emerald-400" />
+              <Check className="w-5 h-5 text-emerald-600" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-rose-400" />
+              <AlertCircle className="w-5 h-5 text-rose-600" />
             )}
             <span>{notification.message}</span>
           </div>
@@ -208,11 +208,11 @@ export const ComposePage: React.FC = () => {
       {/* Two-Column Main Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
         {/* Left Column: Input & Selector Panel */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div className="bg-paper-100 border border-paper-200 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex flex-col gap-5">
-            {/* Selector Pills Row (Writemail.ai mirror) */}
+            {/* Selector Pills Row */}
             <div>
-              <label className="text-[11px] font-semibold uppercase text-slate-400 tracking-wider block mb-2">
+              <label className="text-[11px] font-semibold uppercase text-ink-700 tracking-wider block mb-2">
                 Style & Tone Adjusters
               </label>
               <div className="flex flex-wrap items-center gap-2">
@@ -225,7 +225,7 @@ export const ComposePage: React.FC = () => {
 
             {/* Recipient Context */}
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">
+              <label className="text-[11px] font-semibold uppercase text-ink-700 tracking-wider">
                 Recipient / Audience Context (Optional)
               </label>
               <input
@@ -233,13 +233,13 @@ export const ComposePage: React.FC = () => {
                 value={recipientContext}
                 onChange={(e) => setRecipientContext(e.target.value)}
                 placeholder="e.g. VP of Product at Acme Corp, interested in API security"
-                className="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-colors"
+                className="bg-paper-50 border border-paper-200 focus:border-accent-400 rounded-xl px-3.5 py-2 text-xs text-ink-900 placeholder-ink-700/50 focus:outline-none transition-colors"
               />
             </div>
 
             {/* Main Prompt Input Area */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">
+              <label className="text-[11px] font-semibold uppercase text-ink-700 tracking-wider">
                 What email do you want to write?
               </label>
               <textarea
@@ -247,19 +247,19 @@ export const ComposePage: React.FC = () => {
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={10}
                 placeholder="e.g. Write a friendly follow-up email to Sarah regarding the Q3 product strategy deck. Mention that our team reviewed the proposal and we have 2 minor feedback points regarding timeline..."
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500/80 rounded-2xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none leading-relaxed transition-all resize-none font-sans"
+                className="w-full bg-paper-50 border border-paper-200 focus:border-accent-400 rounded-2xl p-4 text-sm text-ink-900 placeholder-ink-700/50 focus:outline-none leading-relaxed transition-all resize-none font-sans"
               />
             </div>
           </div>
 
           {/* Primary Generate Button */}
-          <div className="mt-6 pt-4 border-t border-slate-800">
+          <div className="mt-6 pt-4 border-t border-paper-200">
             <button
               onClick={handleGenerate}
               disabled={isGenerating || !prompt.trim()}
-              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-40"
+              className="w-full py-3.5 bg-accent-400 hover:bg-accent-500 text-ink-900 font-semibold rounded-xl shadow-lg shadow-accent-400/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-40"
             >
-              <Wand2 className="w-4 h-4 text-indigo-200" />
+              <Wand2 className="w-4 h-4 text-ink-900" />
               <span>{isGenerating ? 'Generating Email...' : 'Generate Email'}</span>
             </button>
           </div>
@@ -286,39 +286,39 @@ export const ComposePage: React.FC = () => {
 
       {/* Schedule Email Modal */}
       {showScheduleModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-sky-400" />
+        <div className="fixed inset-0 z-50 bg-ink-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-paper-100 border border-paper-200 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-paper-200 mb-4">
+              <h3 className="text-base font-semibold text-ink-900 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-sky-600" />
                 Schedule Email Dispatch
               </h3>
-              <button onClick={() => setShowScheduleModal(false)} className="text-slate-400 hover:text-slate-200">
+              <button onClick={() => setShowScheduleModal(false)} className="text-ink-700 hover:text-ink-900">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="flex flex-col gap-3 mb-6">
-              <label className="text-xs font-semibold text-slate-300">Select Date and Time</label>
+              <label className="text-xs font-semibold text-ink-700">Select Date and Time</label>
               <input
                 type="datetime-local"
                 value={scheduleDateTime}
                 onChange={(e) => setScheduleDateTime(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                className="bg-paper-50 border border-paper-200 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 focus:outline-none focus:border-accent-400"
               />
             </div>
 
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={() => setShowScheduleModal(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800"
+                className="px-4 py-2 text-xs font-medium text-ink-700 hover:text-ink-900 rounded-xl hover:bg-paper-200"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateSchedule}
                 disabled={!scheduleDateTime}
-                className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl disabled:opacity-40"
+                className="px-5 py-2 text-xs font-semibold text-ink-900 bg-accent-400 hover:bg-accent-500 rounded-xl disabled:opacity-40 shadow-sm"
               >
                 Confirm Schedule
               </button>

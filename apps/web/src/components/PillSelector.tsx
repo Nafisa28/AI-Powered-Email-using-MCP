@@ -19,15 +19,15 @@ export const PillSelector: React.FC<PillSelectorProps> = ({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-indigo-500/50 text-slate-200 text-xs font-medium pl-3 pr-7 py-1.5 rounded-full cursor-pointer transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+        className="appearance-none bg-paper-100 hover:bg-paper-200 border border-paper-200 hover:border-accent-400 text-ink-900 text-xs font-medium pl-3 pr-7 py-1.5 rounded-full cursor-pointer transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-accent-400/40"
       >
         {options.map((opt) => (
-          <option key={opt} value={opt} className="bg-slate-900 text-slate-200 py-1">
+          <option key={opt} value={opt} className="bg-paper-100 text-ink-900 py-1">
             {label}: {opt}
           </option>
         ))}
       </select>
-      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+      <ChevronDown className="w-3.5 h-3.5 text-ink-700 absolute right-2.5 pointer-events-none" />
     </div>
   );
 };
