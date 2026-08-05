@@ -4,6 +4,8 @@ import { decryptToken } from '../crypto.js';
 interface GmailToolArgs {
   accessTokenEnc: string;
   refreshTokenEnc: string;
+  clientId?: string;
+  clientSecret?: string;
   to?: string;
   subject?: string;
   body?: string;
@@ -11,14 +13,22 @@ interface GmailToolArgs {
   limit?: number;
 }
 
-function getGmailClient(accessTokenEnc: string, refreshTokenEnc: string) {
+function getGmailClient(accessTokenEnc: string, refreshTokenEnc: string, customClientId?: string, customClientSecret?: string) {
   const accessToken = decryptToken(accessTokenEnc);
   const refreshToken = decryptToken(refreshTokenEnc);
 
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-  );
+  if (!accessToken) {
+    throw new Error('No valid access token found. Please reconnect your Gmail account via OAuth.');
+  }
+
+  const clientId = customClientId || process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = customClientSecret || process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Google OAuth client ID and client secret are not configured in settings.');
+  }
+
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
 
   oauth2Client.setCredentials({
     access_token: accessToken,
@@ -48,21 +58,16 @@ function createMimeMessage(to: string, subject: string, body: string): string {
 export async function handleGmailSendEmail(args: GmailToolArgs) {
   try {
     if (!args.to || !args.subject || !args.body) {
-      throw new Error('Missing required email fields: to, subject, body');
+      return { success: false, error: 'Missing required email fields: to, subject, body' };
     }
 
-    // If running in development/demo without actual OAuth tokens
-    const accessToken = decryptToken(args.accessTokenEnc);
-    if (!accessToken || accessToken.startsWith('mock_')) {
-      console.log(`[MCP Gmail Mock Send] To: ${args.to}, Subject: ${args.subject}`);
-      return {
-        success: true,
-        messageId: `mock-msg-${Date.now()}`,
-        status: 'SENT (MOCK)'
-      };
+    if (!args.accessTokenEnc) {
+      return { success: false, error: 'No access token provided. Please connect your Gmail account via OAuth in Settings.' };
     }
 
-    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc);
+    console.log(`[MCP Gmail] Sending email to: ${args.to}, subject: "${args.subject}"`);
+
+    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc, args.clientId, args.clientSecret);
     const raw = createMimeMessage(args.to, args.subject, args.body);
 
     const res = await gmail.users.messages.send({
@@ -70,32 +75,30 @@ export async function handleGmailSendEmail(args: GmailToolArgs) {
       requestBody: { raw }
     });
 
+    console.log(`[MCP Gmail] Email sent successfully. Gmail messageId: ${res.data.id}`);
+
     return {
       success: true,
       messageId: res.data.id,
       status: 'SENT'
     };
   } catch (error: any) {
-    console.error('[Gmail Send Email Error]', error);
+    const errorMsg = error?.response?.data?.error?.message || error.message || 'Failed to send email via Gmail';
+    console.error('[MCP Gmail Send Error]', errorMsg);
     return {
       success: false,
-      error: error.message || 'Failed to send email via Gmail'
+      error: errorMsg
     };
   }
 }
 
 export async function handleGmailSaveDraft(args: GmailToolArgs) {
   try {
-    const accessToken = decryptToken(args.accessTokenEnc);
-    if (!accessToken || accessToken.startsWith('mock_')) {
-      return {
-        success: true,
-        draftId: `mock-draft-${Date.now()}`,
-        status: 'DRAFT_SAVED (MOCK)'
-      };
+    if (!args.accessTokenEnc) {
+      return { success: false, error: 'No access token provided. Please connect your Gmail account via OAuth.' };
     }
 
-    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc);
+    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc, args.clientId, args.clientSecret);
     const raw = createMimeMessage(args.to || '', args.subject || '', args.body || '');
 
     const res = await gmail.users.drafts.create({
@@ -111,44 +114,19 @@ export async function handleGmailSaveDraft(args: GmailToolArgs) {
       status: 'SAVED'
     };
   } catch (error: any) {
-    console.error('[Gmail Save Draft Error]', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to save draft via Gmail'
-    };
+    const errorMsg = error?.response?.data?.error?.message || error.message || 'Failed to save draft via Gmail';
+    console.error('[MCP Gmail Save Draft Error]', errorMsg);
+    return { success: false, error: errorMsg };
   }
 }
 
 export async function handleGmailReadInbox(args: GmailToolArgs) {
   try {
-    const accessToken = decryptToken(args.accessTokenEnc);
-    if (!accessToken || accessToken.startsWith('mock_')) {
-      return {
-        success: true,
-        messages: [
-          {
-            id: 'mock-inbox-1',
-            from: 'alex@example.com',
-            to: 'me@domain.com',
-            subject: 'Q3 Product Strategy Review',
-            body: 'Hi team, please find attached our Q3 strategy document for review.',
-            date: new Date().toISOString(),
-            snippet: 'Hi team, please find attached our Q3 strategy...'
-          },
-          {
-            id: 'mock-inbox-2',
-            from: 'sarah.engineering@company.org',
-            to: 'me@domain.com',
-            subject: 'API MCP Server Deployment Update',
-            body: 'Hey, the new MCP server deployment was successful. All integration checks passed.',
-            date: new Date(Date.now() - 3600000).toISOString(),
-            snippet: 'Hey, the new MCP server deployment was successful...'
-          }
-        ]
-      };
+    if (!args.accessTokenEnc) {
+      return { success: false, error: 'No access token provided. Please connect your Gmail account via OAuth.' };
     }
 
-    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc);
+    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc, args.clientId, args.clientSecret);
     const listRes = await gmail.users.messages.list({
       userId: 'me',
       q: 'in:inbox',
@@ -186,31 +164,19 @@ export async function handleGmailReadInbox(args: GmailToolArgs) {
 
     return { success: true, messages };
   } catch (error: any) {
-    console.error('[Gmail Read Inbox Error]', error);
-    return { success: false, error: error.message || 'Failed to read Gmail inbox' };
+    const errorMsg = error?.response?.data?.error?.message || error.message || 'Failed to read Gmail inbox';
+    console.error('[MCP Gmail Read Inbox Error]', errorMsg);
+    return { success: false, error: errorMsg };
   }
 }
 
 export async function handleGmailReadSent(args: GmailToolArgs) {
   try {
-    const accessToken = decryptToken(args.accessTokenEnc);
-    if (!accessToken || accessToken.startsWith('mock_')) {
-      return {
-        success: true,
-        messages: [
-          {
-            id: 'mock-sent-1',
-            from: 'me@domain.com',
-            to: 'client@acme.corp',
-            subject: 'Re: MailFlow AI Implementation Proposal',
-            body: 'Thanks for reaching out! We are on schedule to deliver the AI email platform by EOD.',
-            date: new Date().toISOString()
-          }
-        ]
-      };
+    if (!args.accessTokenEnc) {
+      return { success: false, error: 'No access token provided. Please connect your Gmail account via OAuth.' };
     }
 
-    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc);
+    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc, args.clientId, args.clientSecret);
     const listRes = await gmail.users.messages.list({
       userId: 'me',
       q: 'in:sent',
@@ -248,31 +214,19 @@ export async function handleGmailReadSent(args: GmailToolArgs) {
 
     return { success: true, messages };
   } catch (error: any) {
-    console.error('[Gmail Read Sent Error]', error);
-    return { success: false, error: error.message || 'Failed to read Gmail sent messages' };
+    const errorMsg = error?.response?.data?.error?.message || error.message || 'Failed to read Gmail sent messages';
+    console.error('[MCP Gmail Read Sent Error]', errorMsg);
+    return { success: false, error: errorMsg };
   }
 }
 
 export async function handleGmailSearchEmails(args: GmailToolArgs) {
   try {
-    const accessToken = decryptToken(args.accessTokenEnc);
-    if (!accessToken || accessToken.startsWith('mock_')) {
-      return {
-        success: true,
-        messages: [
-          {
-            id: 'mock-search-1',
-            from: 'support@service.io',
-            to: 'me@domain.com',
-            subject: `SearchResult for: ${args.query}`,
-            body: `Matching email content containing '${args.query}'.`,
-            date: new Date().toISOString()
-          }
-        ]
-      };
+    if (!args.accessTokenEnc) {
+      return { success: false, error: 'No access token provided. Please connect your Gmail account via OAuth.' };
     }
 
-    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc);
+    const gmail = getGmailClient(args.accessTokenEnc, args.refreshTokenEnc, args.clientId, args.clientSecret);
     const listRes = await gmail.users.messages.list({
       userId: 'me',
       q: args.query || '',
@@ -310,7 +264,8 @@ export async function handleGmailSearchEmails(args: GmailToolArgs) {
 
     return { success: true, messages };
   } catch (error: any) {
-    console.error('[Gmail Search Error]', error);
-    return { success: false, error: error.message || 'Failed to search Gmail messages' };
+    const errorMsg = error?.response?.data?.error?.message || error.message || 'Failed to search Gmail messages';
+    console.error('[MCP Gmail Search Error]', errorMsg);
+    return { success: false, error: errorMsg };
   }
 }

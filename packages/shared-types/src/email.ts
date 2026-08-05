@@ -27,6 +27,7 @@ export interface EmailLogDto {
   subject: string;
   recipient: string;
   status: EmailLogStatus;
+  messageId?: string | null;
   sentAt: string;
 }
 

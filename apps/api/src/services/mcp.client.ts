@@ -30,6 +30,8 @@ export class MCPClient {
     provider: 'GMAIL' | 'OUTLOOK';
     accessTokenEnc: string;
     refreshTokenEnc: string;
+    clientId?: string;
+    clientSecret?: string;
   }) {
     return this.callTool('send_email', params);
   }
@@ -41,6 +43,8 @@ export class MCPClient {
     provider: 'GMAIL' | 'OUTLOOK';
     accessTokenEnc: string;
     refreshTokenEnc: string;
+    clientId?: string;
+    clientSecret?: string;
   }) {
     return this.callTool('save_draft', params);
   }
@@ -51,6 +55,8 @@ export class MCPClient {
     accessTokenEnc: string;
     refreshTokenEnc: string;
     limit?: number;
+    clientId?: string;
+    clientSecret?: string;
   }) {
     return this.callTool('read_inbox', params);
   }
@@ -61,6 +67,8 @@ export class MCPClient {
     accessTokenEnc: string;
     refreshTokenEnc: string;
     limit?: number;
+    clientId?: string;
+    clientSecret?: string;
   }) {
     return this.callTool('read_sent', params);
   }
@@ -72,6 +80,8 @@ export class MCPClient {
     refreshTokenEnc: string;
     query: string;
     limit?: number;
+    clientId?: string;
+    clientSecret?: string;
   }) {
     return this.callTool('search_emails', params);
   }

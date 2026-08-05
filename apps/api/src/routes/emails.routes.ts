@@ -40,7 +40,9 @@ router.post('/send', async (req: AuthRequest, res) => {
       accountId: emailAccount.id,
       provider: emailAccount.provider as 'GMAIL' | 'OUTLOOK',
       accessTokenEnc: emailAccount.accessTokenEnc,
-      refreshTokenEnc: emailAccount.refreshTokenEnc
+      refreshTokenEnc: emailAccount.refreshTokenEnc,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET
     });
 
     if (!mcpResult.success) {
@@ -49,14 +51,15 @@ router.post('/send', async (req: AuthRequest, res) => {
       });
     }
 
-    // Create EmailLog audit record
+    // Create EmailLog audit record with real messageId returned from provider API
     const emailLog = await prisma.emailLog.create({
       data: {
         userId: req.user!.id,
         emailAccountId: emailAccount.id,
         subject,
         recipient: to,
-        status: 'SENT'
+        status: 'SENT',
+        messageId: mcpResult.messageId || null
       }
     });
 
@@ -96,7 +99,9 @@ router.get('/inbox', async (req: AuthRequest, res) => {
       provider: emailAccount.provider as any,
       accessTokenEnc: emailAccount.accessTokenEnc,
       refreshTokenEnc: emailAccount.refreshTokenEnc,
-      limit
+      limit,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET
     });
 
     res.json(mcpResult);
@@ -123,7 +128,9 @@ router.get('/sent', async (req: AuthRequest, res) => {
       provider: emailAccount.provider as any,
       accessTokenEnc: emailAccount.accessTokenEnc,
       refreshTokenEnc: emailAccount.refreshTokenEnc,
-      limit
+      limit,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET
     });
 
     res.json(mcpResult);
@@ -154,7 +161,9 @@ router.get('/search', async (req: AuthRequest, res) => {
       provider: emailAccount.provider as any,
       accessTokenEnc: emailAccount.accessTokenEnc,
       refreshTokenEnc: emailAccount.refreshTokenEnc,
-      query: q
+      query: q,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET
     });
 
     res.json(mcpResult);

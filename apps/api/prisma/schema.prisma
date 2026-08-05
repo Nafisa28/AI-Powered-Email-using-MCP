@@ -65,6 +65,7 @@ model EmailLog {
   subject        String
   recipient      String
   status         String       @default("SENT") // SENT | FAILED
+  messageId      String?
   sentAt         DateTime     @default(now())
 
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)

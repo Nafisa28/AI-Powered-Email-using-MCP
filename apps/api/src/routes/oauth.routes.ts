@@ -88,50 +88,91 @@ router.get('/google/callback', async (req, res) => {
   }
 });
 
-// Dev / Demo Link account endpoint (when testing without live OAuth apps)
-router.post('/connect-mock', authMiddleware, async (req: AuthRequest, res) => {
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.resolve(__dirname, '../../../../.env');
+
+function readEnv(): Record<string, string> {
+  if (!fs.existsSync(envPath)) return {};
+  const content = fs.readFileSync(envPath, 'utf8');
+  const env: Record<string, string> = {};
+  content.split('\n').forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const firstEq = trimmed.indexOf('=');
+    if (firstEq !== -1) {
+      const key = trimmed.substring(0, firstEq).trim();
+      const val = trimmed.substring(firstEq + 1).trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
+      env[key] = val;
+    }
+  });
+  return env;
+}
+
+function writeEnv(updates: Record<string, string>) {
+  const current = readEnv();
+  const merged = { ...current, ...updates };
+  const lines = Object.entries(merged).map(([k, v]) => `${k}="${v}"`);
+  fs.writeFileSync(envPath, lines.join('\n'), 'utf8');
+  Object.entries(updates).forEach(([k, v]) => {
+    process.env[k] = v;
+  });
+}
+
+// Disconnect/Delete linked email account
+router.delete('/accounts/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const { provider, providerEmail } = req.body;
-    if (!provider || !providerEmail) {
-      return res.status(400).json({ error: 'Provider and providerEmail are required' });
+    await prisma.emailAccount.deleteMany({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id
+      }
+    });
+    res.json({ success: true, message: 'Account disconnected successfully' });
+  } catch (error: any) {
+    console.error('[Disconnect Account Error]', error);
+    res.status(500).json({ error: 'Failed to disconnect account' });
+  }
+});
+
+// Get current Google App settings
+router.get('/config', authMiddleware, (req, res) => {
+  try {
+    const env = readEnv();
+    res.json({
+      googleClientId: env.GOOGLE_CLIENT_ID || '',
+      googleClientSecret: env.GOOGLE_CLIENT_SECRET ? '••••••••' : '',
+      googleRedirectUri: env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/oauth/google/callback',
+      anthropicApiKey: env.ANTHROPIC_API_KEY ? '••••••••' : ''
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to read env configurations' });
+  }
+});
+
+// Update Google App and Anthropic settings in the .env file at runtime
+router.post('/config', authMiddleware, (req, res) => {
+  try {
+    const { googleClientId, googleClientSecret, googleRedirectUri, anthropicApiKey } = req.body;
+    const updates: Record<string, string> = {};
+    if (googleClientId !== undefined) updates.GOOGLE_CLIENT_ID = googleClientId;
+    if (googleClientSecret !== undefined && googleClientSecret !== '••••••••') {
+      updates.GOOGLE_CLIENT_SECRET = googleClientSecret;
+    }
+    if (googleRedirectUri !== undefined) updates.GOOGLE_REDIRECT_URI = googleRedirectUri;
+    if (anthropicApiKey !== undefined && anthropicApiKey !== '••••••••') {
+      updates.ANTHROPIC_API_KEY = anthropicApiKey;
     }
 
-    const accessTokenEnc = encryptToken(`mock_access_token_${Date.now()}`);
-    const refreshTokenEnc = encryptToken(`mock_refresh_token_${Date.now()}`);
-
-    const account = await prisma.emailAccount.upsert({
-      where: {
-        userId_provider_providerEmail: {
-          userId: req.user!.id,
-          provider,
-          providerEmail
-        }
-      },
-      update: {
-        accessTokenEnc,
-        refreshTokenEnc
-      },
-      create: {
-        userId: req.user!.id,
-        provider,
-        providerEmail,
-        accessTokenEnc,
-        refreshTokenEnc
-      }
-    });
-
-    res.json({
-      success: true,
-      account: {
-        id: account.id,
-        provider: account.provider,
-        providerEmail: account.providerEmail,
-        connectedAt: account.connectedAt
-      }
-    });
-  } catch (error: any) {
-    console.error('[Mock Connect Error]', error);
-    res.status(500).json({ error: 'Failed to connect email account' });
+    writeEnv(updates);
+    res.json({ success: true, message: 'Credentials updated successfully' });
+  } catch (err: any) {
+    console.error('[Update Config Error]', err);
+    res.status(500).json({ error: 'Failed to save new credentials to .env file' });
   }
 });
 

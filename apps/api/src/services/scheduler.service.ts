@@ -54,7 +54,7 @@ export function startScheduler() {
           continue;
         }
 
-        // Call MCP Server via MCP Client
+        // Call MCP Server via MCP Client with credentials
         const mcpResult = await MCPClient.sendEmail({
           to: draft.subject.includes('to:') ? draft.subject.split('to:')[1].trim() : 'scheduled-recipient@example.com',
           subject: draft.subject,
@@ -62,7 +62,9 @@ export function startScheduler() {
           accountId: emailAccount.id,
           provider: emailAccount.provider as any,
           accessTokenEnc: emailAccount.accessTokenEnc,
-          refreshTokenEnc: emailAccount.refreshTokenEnc
+          refreshTokenEnc: emailAccount.refreshTokenEnc,
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET
         });
 
         if (mcpResult.success) {

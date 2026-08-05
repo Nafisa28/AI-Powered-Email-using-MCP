@@ -9,30 +9,27 @@ function getEncryptionKey(): Buffer {
 
 export function decryptToken(encryptedText: string): string {
   if (!encryptedText) return '';
-  // If text is not encrypted (e.g. mock token or plain token), handle gracefully
+
+  // If text is not in encrypted format (missing colons)
   if (!encryptedText.includes(':')) {
-    return encryptedText;
+    throw new Error('Malformed token format (missing encryption markers)');
   }
 
   const parts = encryptedText.split(':');
   if (parts.length !== 3) {
-    return encryptedText;
+    throw new Error('Malformed token format (invalid encryption parts length)');
   }
 
-  try {
-    const [ivHex, authTagHex, encryptedDataHex] = parts;
-    const iv = Buffer.from(ivHex, 'hex');
-    const authTag = Buffer.from(authTagHex, 'hex');
-    const key = getEncryptionKey();
+  const [ivHex, authTagHex, encryptedDataHex] = parts;
+  const iv = Buffer.from(ivHex, 'hex');
+  const authTag = Buffer.from(authTagHex, 'hex');
+  const key = getEncryptionKey();
 
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-    decipher.setAuthTag(authTag);
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(authTag);
 
-    let decrypted = decipher.update(encryptedDataHex, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
+  let decrypted = decipher.update(encryptedDataHex, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
 
-    return decrypted;
-  } catch (err) {
-    return encryptedText;
-  }
+  return decrypted;
 }
