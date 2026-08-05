@@ -122,7 +122,7 @@ ${recipientContext}`;
     }
 
     const threadContent = req.emails
-      .map((e, idx) => `Email #${idx + 1}\nFrom: ${e.from}\nDate: ${e.date}\nSubject: ${e.subject}\nBody: ${e.body}`)
+      .map((e: any, idx: number) => `Email #${idx + 1}\nFrom: ${e.from}\nDate: ${e.date}\nSubject: ${e.subject}\nBody: ${e.body}`)
       .join('\n\n---\n\n');
 
     const systemPrompt = `Analyze the email thread and return ONLY valid JSON with keys: "summary" (string), "keyPoints" (string array), and "suggestedAction" (string).`;

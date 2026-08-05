@@ -33,6 +33,9 @@ export function startScheduler() {
       if (dueSchedules.length === 0) return;
 
       console.log(`[Scheduler] Found ${dueSchedules.length} email(s) due for scheduled sending.`);
+      for (const s of dueSchedules) {
+        console.log(`[Scheduler Debug] Schedule id=${s.id}, sendAt=${s.sendAt.toISOString()}, now=${now.toISOString()}, diff=${(now.getTime() - s.sendAt.getTime()) / 1000}s ago`);
+      }
 
       for (const sched of dueSchedules) {
         const draft = sched.draft;
@@ -54,10 +57,18 @@ export function startScheduler() {
           continue;
         }
 
+        const recipient = draft.subject.includes('(to:')
+          ? draft.subject.split('(to:')[1].replace(')', '').trim()
+          : draft.subject.includes('to:')
+          ? draft.subject.split('to:')[1].trim()
+          : 'scheduled-recipient@example.com';
+
+        const cleanSubject = draft.subject.replace(/\s*\(to:.*?\)/, '').trim();
+
         // Call MCP Server via MCP Client with credentials
         const mcpResult = await MCPClient.sendEmail({
-          to: draft.subject.includes('to:') ? draft.subject.split('to:')[1].trim() : 'scheduled-recipient@example.com',
-          subject: draft.subject,
+          to: recipient,
+          subject: cleanSubject,
           body: draft.body,
           accountId: emailAccount.id,
           provider: emailAccount.provider as any,
@@ -82,8 +93,8 @@ export function startScheduler() {
             data: {
               userId: draft.userId,
               emailAccountId: emailAccount.id,
-              subject: draft.subject,
-              recipient: 'scheduled-recipient@example.com',
+              subject: cleanSubject,
+              recipient: recipient,
               status: 'SENT'
             }
           });

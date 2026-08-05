@@ -30,6 +30,49 @@ export const ComposePage: React.FC = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleDateTime, setScheduleDateTime] = useState('');
 
+  const openScheduleModal = () => {
+    // Default to 1 hour from now in local ISO format (YYYY-MM-DDTHH:mm)
+    const defaultTime = new Date(Date.now() + 60 * 60 * 1000 - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    setScheduleDateTime(defaultTime);
+    setShowScheduleModal(true);
+  };
+
+  const setPresetTime = (minutesFromNow: number) => {
+    const preset = new Date(Date.now() + minutesFromNow * 60 * 1000 - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    setScheduleDateTime(preset);
+  };
+
+  const setTomorrowMorning = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    const preset = new Date(tomorrow.getTime() - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    setScheduleDateTime(preset);
+  };
+
+  const getSchedulePreview = () => {
+    if (!scheduleDateTime) return null;
+    const scheduledDate = new Date(scheduleDateTime);
+    const diffMs = scheduledDate.getTime() - Date.now();
+    if (diffMs <= 0) return { isValid: false, text: 'Selected time must be in the future.' };
+
+    const totalMins = Math.floor(diffMs / (1000 * 60));
+    const hours = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    const timeStr = hours > 0 ? `${hours} hr ${mins} min` : `${mins} min`;
+
+    return {
+      isValid: true,
+      text: `Scheduled for ${scheduledDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} at ${scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (in ${timeStr})`
+    };
+  };
+
   const toneOptions = ['Professional', 'Casual', 'Urgent', 'Friendly', 'Direct', 'Empathetic'];
   const lengthOptions = ['Short', 'Medium', 'Detailed'];
   const styleOptions = ['Professional', 'Persuasive', 'Warm', 'Crisp', 'Executive'];
@@ -77,7 +120,7 @@ export const ComposePage: React.FC = () => {
 
       setSubject(res.data.subject || '');
       setBody(res.data.body || '');
-      setNotification({ type: 'success', message: 'Email generated successfully by Claude AI!' });
+      setNotification({ type: 'success', message: 'Email generated successfully!' });
     } catch (err: any) {
       console.error('[Generate Error]', err);
       setNotification({ type: 'error', message: err?.response?.data?.error || 'Failed to generate email' });
@@ -136,19 +179,42 @@ export const ComposePage: React.FC = () => {
   };
 
   const handleCreateSchedule = async () => {
-    if (!currentDraftId) {
-      // Save draft first
-      const draftRes = await api.post('/drafts', { subject, body, tone });
-      const newDraftId = draftRes.data.id;
-      setCurrentDraftId(newDraftId);
-      await api.post('/schedule', { draftId: newDraftId, sendAt: scheduleDateTime });
-    } else {
-      await api.post('/schedule', { draftId: currentDraftId, sendAt: scheduleDateTime });
+    if (!scheduleDateTime) return;
+
+    const scheduledDate = new Date(scheduleDateTime);
+
+    if (scheduledDate.getTime() <= Date.now()) {
+      setNotification({ type: 'error', message: 'Scheduled time must be in the future.' });
+      return;
     }
 
-    setShowScheduleModal(false);
-    setNotification({ type: 'success', message: `Email scheduled for ${new Date(scheduleDateTime).toLocaleString()}` });
+    const isoString = scheduledDate.toISOString();
+    const finalSubject = to && !subject.includes('(to:') ? `${subject} (to: ${to})` : subject;
+
+    try {
+      let draftIdToSchedule = currentDraftId;
+      if (!draftIdToSchedule) {
+        const draftRes = await api.post('/drafts', { subject: finalSubject, body, tone });
+        draftIdToSchedule = draftRes.data.id;
+        setCurrentDraftId(draftIdToSchedule);
+      } else {
+        await api.post('/drafts', { id: draftIdToSchedule, subject: finalSubject, body, tone });
+      }
+
+      await api.post('/schedule', { draftId: draftIdToSchedule, sendAt: isoString });
+
+      setShowScheduleModal(false);
+      setNotification({
+        type: 'success',
+        message: `Email scheduled for ${scheduledDate.toLocaleDateString()} ${scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Check the Scheduled Queue page!`
+      });
+    } catch (err: any) {
+      console.error('[Schedule Error]', err);
+      setNotification({ type: 'error', message: err?.response?.data?.error || 'Failed to schedule email' });
+    }
   };
+
+  const schedulePreview = getSchedulePreview();
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -246,7 +312,7 @@ export const ComposePage: React.FC = () => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={10}
-                placeholder="e.g. Write a friendly follow-up email to Sarah regarding the Q3 product strategy deck. Mention that our team reviewed the proposal and we have 2 minor feedback points regarding timeline..."
+                placeholder="e.g. Write a friendly follow-up email to Sarah regarding the Q3 product strategy deck..."
                 className="w-full bg-paper-50 border border-paper-200 focus:border-accent-400 rounded-2xl p-4 text-sm text-ink-900 placeholder-ink-700/50 focus:outline-none leading-relaxed transition-all resize-none font-sans"
               />
             </div>
@@ -277,7 +343,7 @@ export const ComposePage: React.FC = () => {
             onRegenerate={handleGenerate}
             onSend={handleSendEmail}
             onSaveDraft={handleSaveDraft}
-            onSchedule={() => setShowScheduleModal(true)}
+            onSchedule={openScheduleModal}
             isGenerating={isGenerating}
             isSending={isSending}
           />
@@ -298,15 +364,66 @@ export const ComposePage: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex flex-col gap-3 mb-6">
-              <label className="text-xs font-semibold text-ink-700">Select Date and Time</label>
+            {/* Quick Presets */}
+            <div className="mb-4">
+              <label className="text-[11px] font-semibold uppercase text-ink-700 tracking-wider block mb-2">
+                Quick Shortcuts
+              </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setPresetTime(15)}
+                  className="px-3 py-1.5 text-xs font-medium bg-paper-50 hover:bg-paper-200 border border-paper-200 text-ink-900 rounded-lg transition-colors"
+                >
+                  +15 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPresetTime(60)}
+                  className="px-3 py-1.5 text-xs font-medium bg-paper-50 hover:bg-paper-200 border border-paper-200 text-ink-900 rounded-lg transition-colors"
+                >
+                  +1 Hour
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPresetTime(180)}
+                  className="px-3 py-1.5 text-xs font-medium bg-paper-50 hover:bg-paper-200 border border-paper-200 text-ink-900 rounded-lg transition-colors"
+                >
+                  +3 Hours
+                </button>
+                <button
+                  type="button"
+                  onClick={setTomorrowMorning}
+                  className="px-3 py-1.5 text-xs font-medium bg-paper-50 hover:bg-paper-200 border border-paper-200 text-ink-900 rounded-lg transition-colors"
+                >
+                  Tomorrow 9:00 AM
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 mb-4">
+              <label className="text-xs font-semibold text-ink-700">Custom Date and Time</label>
               <input
                 type="datetime-local"
                 value={scheduleDateTime}
                 onChange={(e) => setScheduleDateTime(e.target.value)}
+                min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                 className="bg-paper-50 border border-paper-200 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 focus:outline-none focus:border-accent-400"
               />
             </div>
+
+            {/* Live Preview Card */}
+            {schedulePreview && (
+              <div
+                className={`p-3 rounded-xl border text-xs mb-6 ${
+                  schedulePreview.isValid
+                    ? 'bg-sky-500/10 border-sky-500/30 text-sky-900 font-medium'
+                    : 'bg-rose-500/10 border-rose-500/30 text-rose-900 font-medium'
+                }`}
+              >
+                {schedulePreview.text}
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2">
               <button
@@ -317,7 +434,7 @@ export const ComposePage: React.FC = () => {
               </button>
               <button
                 onClick={handleCreateSchedule}
-                disabled={!scheduleDateTime}
+                disabled={!scheduleDateTime || !schedulePreview?.isValid}
                 className="px-5 py-2 text-xs font-semibold text-ink-900 bg-accent-400 hover:bg-accent-500 rounded-xl disabled:opacity-40 shadow-sm"
               >
                 Confirm Schedule

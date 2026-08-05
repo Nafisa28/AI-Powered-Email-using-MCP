@@ -39,15 +39,28 @@ router.post('/', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Draft not found' });
     }
 
+    const parsedSendAt = new Date(sendAt);
+    const now = new Date();
+
+    console.log('[Schedule Debug] Received sendAt raw:', sendAt);
+    console.log('[Schedule Debug] Parsed sendAt:', parsedSendAt.toISOString());
+    console.log('[Schedule Debug] Server now:', now.toISOString());
+    console.log('[Schedule Debug] Is in future?', parsedSendAt.getTime() > now.getTime());
+
+    // Reject if the scheduled time is in the past
+    if (parsedSendAt.getTime() <= now.getTime()) {
+      return res.status(400).json({ error: 'Scheduled time must be in the future.' });
+    }
+
     const schedule = await prisma.schedule.upsert({
       where: { draftId },
       update: {
-        sendAt: new Date(sendAt),
+        sendAt: parsedSendAt,
         status: 'PENDING'
       },
       create: {
         draftId,
-        sendAt: new Date(sendAt),
+        sendAt: parsedSendAt,
         status: 'PENDING'
       }
     });
@@ -56,6 +69,8 @@ router.post('/', async (req: AuthRequest, res) => {
       where: { id: draftId },
       data: { status: 'SCHEDULED' }
     });
+
+    console.log('[Schedule Debug] Schedule created with id:', schedule.id, 'sendAt:', schedule.sendAt);
 
     res.status(201).json(schedule);
   } catch (error: any) {
