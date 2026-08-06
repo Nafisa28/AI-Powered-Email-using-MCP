@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Sparkles, User, Mail, Lock, ArrowRight } from 'lucide-react';
 
@@ -11,7 +10,6 @@ export const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,9 +18,10 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await api.post('/auth/register', { name, email, password });
-      login(res.data.token, res.data.user);
-      navigate('/');
+      await api.post('/auth/register', { name, email, password });
+      navigate('/login', {
+        state: { successMessage: 'Registration successful! Please sign in with your new credentials.' }
+      });
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Registration failed.');
     } finally {
