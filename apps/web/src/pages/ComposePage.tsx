@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { PillSelector } from '../components/PillSelector';
 import { EmailPreviewCard } from '../components/EmailPreviewCard';
-import { Wand2, Check, AlertCircle, Clock, X } from 'lucide-react';
+import { Wand2, Check, AlertCircle, Clock, X, RefreshCw, Lightbulb } from 'lucide-react';
 
 export const ComposePage: React.FC = () => {
+  const location = useLocation();
+
   const [prompt, setPrompt] = useState('');
   const [to, setTo] = useState('');
   const [recipientContext, setRecipientContext] = useState('');
@@ -30,8 +33,23 @@ export const ComposePage: React.FC = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleDateTime, setScheduleDateTime] = useState('');
 
+  // Load existing draft if navigated from DraftsPage
+  useEffect(() => {
+    if (location.state && (location.state as any).draft) {
+      const draft = (location.state as any).draft;
+      setCurrentDraftId(draft.id);
+      setSubject(draft.subject || '');
+      setBody(draft.body || '');
+      setPrompt(draft.body || draft.subject || '');
+      if (draft.tone) setTone(draft.tone);
+      setNotification({
+        type: 'success',
+        message: `Loaded saved draft: "${draft.subject || 'Untitled Draft'}" ready for editing.`
+      });
+    }
+  }, [location.state]);
+
   const openScheduleModal = () => {
-    // Default to 1 hour from now in local ISO format (YYYY-MM-DDTHH:mm)
     const defaultTime = new Date(Date.now() + 60 * 60 * 1000 - new Date().getTimezoneOffset() * 60000)
       .toISOString()
       .slice(0, 16);
@@ -78,6 +96,16 @@ export const ComposePage: React.FC = () => {
   const styleOptions = ['Professional', 'Persuasive', 'Warm', 'Crisp', 'Executive'];
   const moodOptions = ['Friendly', 'Confident', 'Formal', 'Constructive', 'Enthusiastic'];
 
+  const suggestionChips = [
+    { label: '🌴 Leave Request', text: 'I am requesting a leave of absence for personal reasons from next Monday to Wednesday.' },
+    { label: '🤒 Sick Day', text: 'I am feeling unwell today and will be taking a sick day to recover.' },
+    { label: '📅 Project Sync', text: 'I would like to schedule a 30-minute meeting next week to align on Q3 project deliverables.' },
+    { label: '🤝 Client Follow-up', text: 'Following up on our recent proposal to see if you have any questions or feedback.' },
+    { label: '💼 Resignation Notice', text: 'Formal notification of my resignation, with my last day being two weeks from today.' },
+    { label: '🙏 Thank You Note', text: 'Expressing sincere thanks for your guidance and support during our recent launch.' },
+    { label: '⏰ Payment Reminder', text: 'A friendly reminder regarding outstanding invoice #1042 due this week.' }
+  ];
+
   // Debounced Auto-save draft (~10s)
   useEffect(() => {
     if (!subject && !body) return;
@@ -103,14 +131,20 @@ export const ComposePage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [subject, body, tone]);
 
+  /**
+   * Generates email ONLY when user explicitly clicks Generate Email or Regenerate.
+   * Sends exact prompt text currently in textarea.
+   */
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    const currentPromptText = prompt.trim();
+    if (!currentPromptText) return;
+
     setIsGenerating(true);
     setNotification(null);
 
     try {
       const res = await api.post('/ai/generate', {
-        prompt,
+        prompt: currentPromptText,
         tone,
         length,
         style,
@@ -218,7 +252,7 @@ export const ComposePage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      {/* Banner / Header */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-ink-900 tracking-tight flex items-center gap-2">
@@ -228,7 +262,7 @@ export const ComposePage: React.FC = () => {
             </span>
           </h1>
           <p className="text-sm text-ink-700 mt-1">
-            Describe your email objective, adjust parameters, and send seamlessly via MCP.
+            Describe your situation, narrative, or objective below, then click <span className="font-semibold text-accent-500">Generate Email</span>.
           </p>
         </div>
 
@@ -273,14 +307,26 @@ export const ComposePage: React.FC = () => {
 
       {/* Two-Column Main Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-        {/* Left Column: Input & Selector Panel */}
+        {/* Left Column: Prompt Input & Adjusters Panel */}
         <div className="bg-paper-100 border border-paper-200 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex flex-col gap-5">
-            {/* Selector Pills Row */}
+            {/* Style & Tone Adjusters */}
             <div>
-              <label className="text-[11px] font-semibold uppercase text-ink-700 tracking-wider block mb-2">
-                Style & Tone Adjusters
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] font-semibold uppercase text-ink-700 tracking-wider block">
+                  Style & Tone Adjusters
+                </label>
+                {(subject || body) && (
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !prompt.trim()}
+                    className="text-[11px] font-semibold text-accent-500 hover:underline flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Re-apply Adjusters
+                  </button>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 <PillSelector label="Tone" value={tone} options={toneOptions} onChange={setTone} />
                 <PillSelector label="Length" value={length} options={lengthOptions} onChange={setLength as any} />
@@ -298,27 +344,47 @@ export const ComposePage: React.FC = () => {
                 type="text"
                 value={recipientContext}
                 onChange={(e) => setRecipientContext(e.target.value)}
-                placeholder="e.g. VP of Product at Acme Corp, interested in API security"
+                placeholder="e.g. Manager, HR, Client at Acme Corp"
                 className="bg-paper-50 border border-paper-200 focus:border-accent-400 rounded-xl px-3.5 py-2 text-xs text-ink-900 placeholder-ink-700/50 focus:outline-none transition-colors"
               />
             </div>
 
-            {/* Main Prompt Input Area */}
-            <div className="flex flex-col gap-1.5 flex-1">
+            {/* Prompt Textarea */}
+            <div className="flex flex-col gap-2 flex-1">
               <label className="text-[11px] font-semibold uppercase text-ink-700 tracking-wider">
-                What email do you want to write?
+                What email do you want to write? (Short keyword or full narrative)
               </label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                rows={10}
-                placeholder="e.g. Write a friendly follow-up email to Sarah regarding the Q3 product strategy deck..."
+                rows={8}
+                placeholder="Type any word or full narrative story (e.g. 'I am going to Paris for my brother's wedding next week and need to request leave from Aug 10-15...')"
                 className="w-full bg-paper-50 border border-paper-200 focus:border-accent-400 rounded-2xl p-4 text-sm text-ink-900 placeholder-ink-700/50 focus:outline-none leading-relaxed transition-all resize-none font-sans"
               />
+
+              {/* Prompt Suggestion Chips (ONLY populates textarea when clicked!) */}
+              <div>
+                <span className="text-[10px] font-semibold uppercase text-ink-700 tracking-wider flex items-center gap-1 mb-1.5">
+                  <Lightbulb className="w-3 h-3 text-amber-500" />
+                  Sample Prompt Ideas (Click to populate textarea):
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {suggestionChips.map((chip) => (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => setPrompt(chip.text)}
+                      className="px-2.5 py-1 text-xs bg-paper-50 hover:bg-paper-200 text-ink-900 border border-paper-200 rounded-lg transition-all flex items-center gap-1"
+                    >
+                      <span>{chip.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Primary Generate Button */}
+          {/* Explicit Generate Button */}
           <div className="mt-6 pt-4 border-t border-paper-200">
             <button
               onClick={handleGenerate}
@@ -331,7 +397,7 @@ export const ComposePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Output & Preview Card */}
+        {/* Right Column: Interactive Directly Editable Output Preview Card */}
         <div>
           <EmailPreviewCard
             subject={subject}
