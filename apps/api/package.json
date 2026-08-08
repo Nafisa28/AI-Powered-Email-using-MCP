@@ -7,7 +7,7 @@
     "postinstall": "prisma generate",
     "build": "prisma generate && tsc",
     "dev": "tsx watch src/index.ts",
-    "start": "node ../mcp-server/dist/index.js & node dist/index.js",
+    "start": "npx prisma db push --schema=prisma/schema.prisma && node ../mcp-server/dist/index.js & node dist/index.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio"
