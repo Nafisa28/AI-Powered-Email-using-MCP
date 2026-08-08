@@ -7,7 +7,7 @@
     "postinstall": "prisma generate",
     "build": "prisma generate && tsc",
     "dev": "tsx watch src/index.ts",
-    "start": "npx prisma db push --schema=prisma/schema.prisma && node ../mcp-server/dist/index.js & node dist/index.js",
+    "start": "npx prisma db push --schema=prisma/schema.prisma && node dist/index.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio"
@@ -16,6 +16,7 @@
     "@anthropic-ai/sdk": "^0.27.3",
     "@mailflow/shared-types": "workspace:*",
     "@prisma/client": "5.19.1",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

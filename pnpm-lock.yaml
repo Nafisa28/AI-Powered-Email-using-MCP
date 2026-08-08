@@ -20,6 +20,9 @@ importers:
       '@mailflow/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
+      '@microsoft/microsoft-graph-client':
+        specifier: ^3.0.7
+        version: 3.0.7
       '@prisma/client':
         specifier: 5.19.1
         version: 5.19.1(prisma@5.22.0)
