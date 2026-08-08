@@ -145,10 +145,10 @@ router.get('/config', authMiddleware, (req, res) => {
   try {
     const env = readEnv();
     res.json({
-      googleClientId: env.GOOGLE_CLIENT_ID || '',
-      googleClientSecret: env.GOOGLE_CLIENT_SECRET ? '••••••••' : '',
-      googleRedirectUri: env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/oauth/google/callback',
-      anthropicApiKey: env.ANTHROPIC_API_KEY ? '••••••••' : ''
+      googleClientId: process.env.GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '',
+      googleClientSecret: (process.env.GOOGLE_CLIENT_SECRET || env.GOOGLE_CLIENT_SECRET) ? '••••••••' : '',
+      googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/oauth/google/callback',
+      anthropicApiKey: (process.env.ANTHROPIC_API_KEY || env.ANTHROPIC_API_KEY) ? '••••••••' : ''
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to read env configurations' });
