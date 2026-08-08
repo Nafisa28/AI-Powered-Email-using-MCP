@@ -81,7 +81,8 @@ router.get('/google/callback', async (req, res) => {
       }
     });
 
-    res.redirect('http://localhost:5173/settings?connected=gmail');
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/settings?connected=gmail`);
   } catch (error: any) {
     console.error('[Google OAuth Callback Error]', error);
     res.status(500).send('OAuth Authentication Failed');
